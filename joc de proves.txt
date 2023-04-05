@@ -1,0 +1,35 @@
+1.
+db.publicacions.find().sort({preu: -1}).projection({titol: 1, preu: 1}).limit(5)
+
+2.
+db.publicacions.aggregate([{$match: {NomEditorial: "Juniper Books"}}, {$group : {_id: null, preu_minim: {$min: "$preu"}, preu_maxim: {$max: "$preu"}, preu_mitja: {$avg: "$preu"}}}])
+
+3. (verificar que el Array dibuixans no es buit)
+db.publicacions.aggregate([{$unwind: "$dibuixants"}, {$group: {_id: "$dibuixants", count: {$sum: 1}}}, {$match: {count: {$gt: 5}}}, {$project: {_id: 1}}])
+
+4.
+db.publicacions.aggregate([{$unwind: "$genere"}, {$group: {_id: {editorial: "$NomEditorial", colleccio: "$NomColleccio", genere: "$genere"}}}, {$group: {_id: "$_id.genere", count: {$sum: 1}}}])
+
+5.
+db.publicacions.aggregate([{$group: {_id: {editorial: "$NomEditorial", colleccio: "$NomColleccio", tancada: "$tancada"}}}, {$group: {_id: "$_id.editorial", colleccions_tancades: {$sum: {$cond: ["$_id.tancada", 1, 0]}}, colleccions_obertes: {$sum: {$cond: ["$_id.tancada", 0, 1]}}}}])
+
+6.
+db.publicacions.aggregate([{$match: {tancada: true}}, {$group: {_id: {editorial: "$NomEditorial", colleccio: "$NomColleccio"}, publicacions: {$sum: 1}}}, {$sort: {publicacions: -1}}, {$limit: 2}, {$project: {editorial: "$_id.editorial", colleccio: "$_id.colleccio", _id: 0}}])
+
+7.
+db.publicacions.aggregate([ { $unwind: "$guionistes" }, { $lookup: { from: "artistes", localField: "guionistes", foreignField: "Nom_artistic", as: "artista" } }, { $unwind: "$artista" }, { $group: { _id: { Nom_artistic: "$artista.Nom_artistic", pais: "$artista.pais" }, count: { $sum: 1 } } }, { $sort: { count: -1 } }, { $limit: 1 }, {$project: {_id: 0, Nom_artisitc: "$_id.Nom_artistic", pais: "$_id.pais"}}])
+
+8.
+db.personatges.aggregate([{$group: {_id: "$isbn", tipus: {$addToSet: "$tipus"}}}, {$match: {tipus: ["heroe"]}}, {$lookup: {from: "publicacions", localField: "_id", foreignField: "ISBN", as: "isbn"}}])
+
+9.//Considerem totes les publicacions ja que no hi ha atribut edicio
+db.Publicacions.updateMany({}, {$set: {"preu": {$sum:["$preu", {$multiply:["$preu", 0.25]}]}}})
+
+10.
+db.Publicacions.aggregate([
+    {$lookup:{
+            from: "Personatges",
+            localField: "ISBN",
+            foreignField:"isbn",
+            as: "Publicacions-Personatges"
+}}, {$project: {"titol":1, "ISBN":1,"Publicacions-Personatges": {"nom":1, "tipus":1}}}])
