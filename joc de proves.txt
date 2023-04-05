@@ -22,8 +22,8 @@ db.publicacions.aggregate([ { $unwind: "$guionistes" }, { $lookup: { from: "arti
 8.
 db.personatges.aggregate([{$group: {_id: "$isbn", tipus: {$addToSet: "$tipus"}}}, {$match: {tipus: ["heroe"]}}, {$lookup: {from: "publicacions", localField: "_id", foreignField: "ISBN", as: "isbn"}}])
 
-9.//Considerem totes les publicacions ja que no hi ha atribut edicio
-db.Publicacions.updateMany({}, {$set: {"preu": {$sum:["$preu", {$multiply:["$preu", 0.25]}]}}})
+9.
+db.Publicacions.updateMany([{$match: {stock:{$gt:20}}}, {$set: {"preu": {$multiply:["$preu", 1.25]}}}])
 
 10.
 db.Publicacions.aggregate([
